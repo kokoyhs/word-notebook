@@ -120,6 +120,34 @@ textarea:focus { outline: none; border-color: var(--accent); border-style: solid
 .confirm .no { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 6px; padding: 3px 10px; }
 .status { font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
 
+.phon { color: var(--muted); font-size: 0.95rem; }
+.ctabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.ctabs button { border: 0; background: transparent; color: var(--muted); padding: 8px 12px; font-size: 0.92rem; font-weight: 500; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.ctabs button:hover { color: var(--ink); }
+.ctabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.panel { display: grid; gap: 12px; min-width: 0; }
+.panel h3 { margin: 0; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); margin: 0; font-size: 0.9rem; }
+.pos { display: grid; gap: 4px; }
+.pos ol { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.syn { margin: 0; font-size: 0.88rem; }
+.syn span { color: var(--muted); font-size: 0.78rem; margin-right: 4px; }
+.more { color: var(--accent); font-size: 0.88rem; justify-self: start; }
+.exlist { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+mark { background: #ffe58a; color: #17212b; border-radius: 3px; padding: 0 2px; }
+.step { display: grid; gap: 8px; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 999px; padding: 7px 14px; font-size: 0.9rem; }
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill svg { width: 15px; height: 15px; }
+.recdot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); }
+.pill.rec.on { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+.pill.rec.on .recdot { background: var(--surface); animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+.myrec { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.myrec span { font-size: 0.85rem; font-weight: 600; }
+.myrec audio { max-width: 100%; height: 36px; }
+
 .filebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
 .filebar .state { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; min-width: 0; flex: 1 1 220px; overflow-wrap: anywhere; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
@@ -315,22 +343,188 @@ function renderCurrent() {
     return;
   }
   const n = filled(w);
+  stopRecording();
   box.innerHTML = `<article class="card">
     <div class="head">
       <h2 class="word">${esc(w.word)}</h2>
-      <button class="icon" id="say" aria-label="발음 듣기" title="발음 듣기">${SPEAK}</button>
-      <button class="icon" id="slow" aria-label="천천히 듣기" title="천천히 듣기">${SLOW}</button>
+      <span class="phon" id="phon"></span>
       <span class="prog ${n === 3 ? "full" : ""}" id="prog">${n}/3 문장</span>
     </div>
-    <div class="links">${links(w.word).map(l => `<a class="chip" href="${l.href}" target="_blank" rel="noopener"><b>${l.t}</b><span>${l.d}</span></a>`).join("")}</div>
-    <div class="sentences">
-      <div class="slabel">My sentences</div>
-      ${[0, 1, 2].map(i => `<div class="srow"><span class="n">${i + 1}</span><textarea id="s-${i}" data-i="${i}" rows="1" placeholder="${esc(w.word)}(으)로 문장 써 보기">${esc((w.s || [])[i] || "")}</textarea></div>`).join("")}
+    <div class="ctabs" role="tablist" aria-label="공부 방법">
+      ${TABS.map(t => `<button type="button" role="tab" id="t-${t.k}" data-tab="${t.k}" aria-selected="${t.k === tab}">${t.label}</button>`).join("")}
     </div>
+    <div class="panel" id="panel" role="tabpanel"></div>
   </article>`;
-  $("say").onclick = () => speak(w.word, 1);
-  $("slow").onclick = () => speak(w.word, 0.7);
-  box.querySelectorAll("textarea").forEach(t => { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; });
+  renderPanel();
+  loadDict(w.word);
+}
+
+// ---- word card tabs
+const TABS = [
+  { k: "def", label: "사전 뜻" },
+  { k: "listen", label: "듣기 · 녹음" },
+  { k: "ex", label: "예문" },
+  { k: "write", label: "문장 써보기" },
+];
+let tab = (() => { try { return localStorage.getItem("word-notebook-tab") || "def"; } catch { return "def"; } })();
+if (!TABS.some(t => t.k === tab)) tab = "def";
+const dict = {};   // word(lowercase) -> "loading" | null (not found) | "error" | entries[]
+
+function setTab(k) {
+  tab = k;
+  try { localStorage.setItem("word-notebook-tab", k); } catch {}
+  document.querySelectorAll(".ctabs [data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === k));
+  if (k !== "listen") stopRecording();
+  renderPanel();
+}
+async function loadDict(word) {
+  const key = word.toLowerCase();
+  if (dict[key] !== undefined && dict[key] !== "error") { showPhonetic(); return; }
+  dict[key] = "loading";
+  try {
+    const r = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word));
+    dict[key] = r.status === 404 ? null : r.ok ? await r.json() : "error";
+  } catch { dict[key] = "error"; }
+  const w = byId(currentId);
+  if (w && w.word.toLowerCase() === key) { showPhonetic(); if (tab === "def" || tab === "ex" || tab === "listen") renderPanel(); }
+}
+function entries() { const w = byId(currentId); const d = w && dict[w.word.toLowerCase()]; return Array.isArray(d) ? d : null; }
+function showPhonetic() {
+  const e = entries(), el = $("phon"); if (!el) return;
+  const p = e && (e.map(x => x.phonetic).find(Boolean) || e.flatMap(x => x.phonetics || []).map(x => x.text).find(Boolean));
+  el.textContent = p || "";
+}
+function dictAudio() {
+  const e = entries(); if (!e) return "";
+  const list = e.flatMap(x => x.phonetics || []).map(x => x.audio).filter(Boolean);
+  return list.find(a => /-us\./.test(a)) || list[0] || "";
+}
+function dictStatus(w) {
+  const d = dict[w.word.toLowerCase()];
+  if (d === "loading" || d === undefined) return `<p class="muted">사전에서 찾는 중…</p>`;
+  if (d === "error") return `<p class="muted">사전을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</p>`;
+  if (d === null) return `<p class="muted">무료 사전에는 이 표현이 없어요. 아래 Merriam-Webster에서 찾아보세요.</p>`;
+  return "";
+}
+function markWord(text, word) {
+  const i = text.toLowerCase().indexOf(word.toLowerCase());
+  if (i < 0) return esc(text);
+  return esc(text.slice(0, i)) + "<mark>" + esc(text.slice(i, i + word.length)) + "</mark>" + esc(text.slice(i + word.length));
+}
+
+function renderPanel() {
+  const w = byId(currentId), p = $("panel");
+  if (!w || !p) return;
+  const [usage, defn] = links(w.word);
+  const ext = (l, text) => `<a class="more" href="${l.href}" target="_blank" rel="noopener">${text}</a>`;
+
+  if (tab === "def") {
+    const e = entries();
+    let html = dictStatus(w);
+    if (e) {
+      const groups = {};
+      e.forEach(x => (x.meanings || []).forEach(m => {
+        const g = groups[m.partOfSpeech] || (groups[m.partOfSpeech] = { defs: [], syn: new Set() });
+        (m.definitions || []).forEach(d => g.defs.push(d.definition));
+        (m.synonyms || []).forEach(s => g.syn.add(s));
+      }));
+      html += Object.entries(groups).map(([pos, g]) => `<section class="pos">
+        <h3>${esc(pos)}</h3>
+        <ol>${g.defs.slice(0, 4).map(d => `<li>${esc(d)}</li>`).join("")}</ol>
+        ${g.syn.size ? `<p class="syn"><span>Synonyms</span> ${[...g.syn].slice(0, 6).map(esc).join(", ")}</p>` : ""}
+      </section>`).join("");
+    }
+    p.innerHTML = html + ext(defn, "Merriam-Webster에서 뜻 더 보기");
+    return;
+  }
+
+  if (tab === "listen") {
+    const audio = dictAudio();
+    p.innerHTML = `
+      <div class="step">
+        <h3>1. 원어민 발음 듣기</h3>
+        <div class="btnrow">
+          <button class="pill" type="button" id="say">${SPEAK} 보통 속도</button>
+          <button class="pill" type="button" id="slow">${SLOW} 천천히</button>
+          ${audio ? `<button class="pill" type="button" id="real">${SPEAK} 사전 녹음 듣기</button>` : ""}
+        </div>
+        <p class="muted">위 영상에서 실제 문장 속 발음도 들어 보세요.</p>
+      </div>
+      <div class="step">
+        <h3>2. 따라 말하고 녹음하기</h3>
+        <div class="btnrow">
+          <button class="pill rec" type="button" id="recBtn"><span class="recdot"></span><span id="recLabel">녹음 시작</span></button>
+          <span class="muted" id="recTime"></span>
+        </div>
+        <div id="myRec"></div>
+      </div>`;
+    $("say").onclick = () => speak(w.word, 1);
+    $("slow").onclick = () => speak(w.word, 0.7);
+    if (audio) $("real").onclick = () => { try { new Audio(audio).play(); } catch {} };
+    $("recBtn").onclick = () => recorder ? stopRecording() : startRecording(w.id);
+    showMyRecording(w.id);
+    return;
+  }
+
+  if (tab === "ex") {
+    const e = entries();
+    let html = dictStatus(w);
+    if (e) {
+      const ex = [...new Set(e.flatMap(x => (x.meanings || []).flatMap(m => (m.definitions || []).map(d => d.example).filter(Boolean))))];
+      html += ex.length
+        ? `<ul class="exlist">${ex.slice(0, 8).map(s => `<li>${markWord(s, w.word)}</li>`).join("")}</ul>`
+        : `<p class="muted">사전에 예문이 없어요. 위 영상 자막과 아래 링크에서 예문을 볼 수 있어요.</p>`;
+    }
+    p.innerHTML = html + ext(usage, "Merriam-Webster에서 예문 더 보기");
+    return;
+  }
+
+  // write
+  p.innerHTML = `<div class="sentences">
+      <p class="muted">이 단어로 내 문장을 3개 써 보세요. 쓰는 대로 저장돼요.</p>
+      ${[0, 1, 2].map(i => `<div class="srow"><span class="n">${i + 1}</span><textarea id="s-${i}" data-i="${i}" rows="1" placeholder="${esc(w.word)}(으)로 문장 써 보기">${esc((w.s || [])[i] || "")}</textarea></div>`).join("")}
+    </div>`;
+  p.querySelectorAll("textarea").forEach(t => { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; });
+}
+
+// ---- recording (kept per word in this browser)
+let recorder = null, recChunks = [], recTimer = null, recStart = 0, recUrl = null;
+async function startRecording(id) {
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { flash("마이크를 쓸 수 없어요. 브라우저 주소창 옆에서 마이크를 허용해 주세요."); return; }
+  recChunks = [];
+  recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = (e) => { if (e.data.size) recChunks.push(e.data); };
+  recorder.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    const blob = new Blob(recChunks, { type: recorder.mimeType || "audio/webm" });
+    recorder = null;
+    clearInterval(recTimer);
+    if (blob.size) { await kvSet("rec:" + id, blob); }
+    if ($("recLabel")) { $("recLabel").textContent = "다시 녹음"; $("recBtn").classList.remove("on"); $("recTime").textContent = ""; }
+    if (currentId === id) showMyRecording(id, true);
+  };
+  recorder.start();
+  recStart = Date.now();
+  $("recBtn").classList.add("on"); $("recLabel").textContent = "멈추기";
+  recTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - recStart) / 1000);
+    if ($("recTime")) $("recTime").textContent = `녹음 중 ${s}초`;
+    if (s >= 30) stopRecording();
+  }, 250);
+}
+function stopRecording() { if (recorder && recorder.state !== "inactive") recorder.stop(); }
+async function showMyRecording(id, autoplay) {
+  const blob = await kvGet("rec:" + id);
+  const box = $("myRec"); if (!box || currentId !== id) return;
+  if (recUrl) URL.revokeObjectURL(recUrl);
+  if (!blob) { box.innerHTML = `<p class="muted">녹음 버튼을 누르고 단어를 말한 뒤 멈추기를 누르세요. 내 발음을 원어민 발음과 비교해 볼 수 있어요.</p>`; return; }
+  recUrl = URL.createObjectURL(blob);
+  box.innerHTML = `<div class="myrec"><span>내 녹음</span><audio controls src="${recUrl}"></audio><button class="del" type="button" id="recDel">지우기</button></div>`;
+  if ($("recLabel")) $("recLabel").textContent = "다시 녹음";
+  $("recDel").onclick = async () => { await kvSet("rec:" + id, null); showMyRecording(id); if ($("recLabel")) $("recLabel").textContent = "녹음 시작"; };
+  if (autoplay) { try { box.querySelector("audio").play(); } catch {} }
 }
 function renderHistory() {
   let list = [...words].sort((a, b) => b.viewed - a.viewed);
@@ -364,6 +558,8 @@ document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () =>
   renderHistory();
 }));
 document.addEventListener("click", (e) => {
+  const tb = e.target.closest("[data-tab]");
+  if (tb) { setTab(tb.dataset.tab); return; }
   const o = e.target.closest("[data-open]");
   if (o) { const w = byId(o.dataset.open); if (w) openWord(w.word); return; }
   const d = e.target.closest("[data-del]"); if (d) { confirming.add(d.dataset.del); renderHistory(); return; }
