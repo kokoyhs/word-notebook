@@ -1,0 +1,574 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Word Pronunciation Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column. Study view = search bar, video, current word card. History view = compact list of past words. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --muted: #5d6b78;
+  --line: #dbe1e7;
+  --accent: #1f6f78;
+  --accent-soft: #e1f0f1;
+  --mark: #ffe58a;
+  --done: #2e7d4f;
+  --danger: #b3261e;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11171c; --surface: #1a2229; --ink: #e8edf1; --muted: #93a2ae; --line: #2b3640;
+    --accent: #5fc0c9; --accent-soft: #1d3438; --mark: #6b5a12; --done: #6fcf97; --danger: #ff8a80;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap {
+  max-width: 760px; margin: 0 auto;
+  padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 18px;
+}
+.top { display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.seg { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.seg button { border: 0; background: transparent; color: var(--muted); padding: 6px 14px; border-radius: 999px; font-size: 0.9rem; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.seg .count { font-variant-numeric: tabular-nums; opacity: 0.8; }
+
+form.find { display: flex; gap: 8px; }
+form.find input {
+  flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; padding: 12px 14px;
+  border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink);
+}
+form.find input:focus { outline: none; border-color: var(--accent); }
+.btn { border: 0; border-radius: 10px; padding: 0 18px; background: var(--accent); color: var(--surface); font-weight: 600; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.word { font-family: var(--display); font-weight: 700; font-size: 1.7rem; margin: 0; overflow-wrap: anywhere; min-width: 0; }
+.icon { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 999px; width: 34px; height: 34px; display: inline-grid; place-items: center; }
+.icon:hover { background: var(--accent-soft); color: var(--accent); }
+.icon svg { width: 16px; height: 16px; }
+.prog { margin-left: auto; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
+.prog.full { color: var(--done); font-weight: 600; }
+
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; flex-direction: column; text-decoration: none; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; line-height: 1.25; }
+.chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+.chip b { font-size: 0.88rem; font-weight: 600; }
+.chip span { font-size: 0.74rem; color: var(--muted); }
+
+.sentences { display: grid; gap: 8px; }
+.slabel { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.srow { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+.srow .n { font-size: 0.8rem; color: var(--muted); padding-top: 9px; text-align: right; font-variant-numeric: tabular-nums; }
+textarea {
+  font: inherit; width: 100%; min-width: 0; resize: vertical; min-height: 40px; padding: 8px 10px;
+  border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--ink);
+}
+textarea:not(:placeholder-shown) { border-style: solid; }
+textarea:focus { outline: none; border-color: var(--accent); border-style: solid; }
+
+.player { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; min-width: 0; }
+.player-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.player-head .meta { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.player-ctrl { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.pbtn { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 8px; padding: 5px 10px; font-size: 0.85rem; }
+.pbtn:hover { border-color: var(--accent); color: var(--accent); }
+#yg { width: 100%; min-height: 200px; }
+#yg iframe { max-width: 100%; }
+
+.empty { background: var(--surface); border: 1.5px dashed var(--line); border-radius: 14px; padding: 28px 20px; text-align: center; display: grid; gap: 12px; justify-items: center; }
+.empty h2 { font-family: var(--display); font-size: 1.15rem; margin: 0; }
+.empty p { margin: 0; color: var(--muted); max-width: 46ch; }
+.ghost { border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 999px; padding: 6px 14px; font-weight: 500; }
+.recent { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.recent button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 12px; font-size: 0.88rem; }
+.recent button:hover { border-color: var(--accent); color: var(--accent); }
+
+.bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.tabs { display: flex; gap: 4px; }
+.tab { border: 1px solid var(--line); background: var(--surface); color: var(--muted); padding: 4px 12px; border-radius: 999px; font-size: 0.85rem; }
+.tab[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.search { font: inherit; font-size: 0.9rem; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); width: 200px; max-width: 100%; }
+
+.hist { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.row .w { border: 0; background: transparent; color: var(--ink); text-align: left; font-weight: 600; font-size: 1rem; padding: 2px 0; overflow-wrap: anywhere; min-width: 0; }
+.row .w:hover { color: var(--accent); text-decoration: underline; }
+.row .p { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row .p.full { color: var(--done); font-weight: 600; }
+.row .d { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.del { border: 0; background: transparent; color: var(--muted); font-size: 0.8rem; padding: 4px 6px; border-radius: 6px; }
+.del:hover { color: var(--danger); }
+.confirm { display: flex; gap: 6px; align-items: center; font-size: 0.8rem; }
+.confirm .yes { border: 0; background: var(--danger); color: var(--surface); border-radius: 6px; padding: 4px 10px; }
+.confirm .no { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 6px; padding: 3px 10px; }
+.status { font-size: 0.8rem; color: var(--muted); min-height: 1.2em; }
+
+.filebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.filebar .state { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; min-width: 0; flex: 1 1 220px; overflow-wrap: anywhere; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
+.dot.on { background: var(--done); }
+.dot.warn { background: #d99a1e; }
+.filebar .acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.fbtn { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 8px; padding: 5px 10px; font-size: 0.82rem; }
+.fbtn:hover { border-color: var(--accent); color: var(--accent); }
+.fbtn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.fbtn.primary:hover { color: var(--surface); filter: brightness(1.1); }
+
+@media (max-width: 480px) {
+  h1 { font-size: 1.4rem; }
+  .search { width: 100%; }
+  .row { grid-template-columns: 1fr auto auto; }
+  .row .d { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>Word Pronunciation Notebook</h1>
+    <div class="seg" role="group" aria-label="화면">
+      <button id="vStudy" type="button" aria-pressed="true">공부하기</button>
+      <button id="vHist" type="button" aria-pressed="false">히스토리 <span class="count" id="cHist"></span></button>
+    </div>
+  </div>
+
+  <div class="filebar" aria-label="저장 위치">
+    <div class="state"><span class="dot" id="fDot"></span><span id="fState">이 브라우저에 저장 중</span></div>
+    <div class="acts">
+      <button class="fbtn primary" id="fReconnect" type="button" hidden>다시 연결</button>
+      <button class="fbtn" id="fNew" type="button" hidden>새 파일에 자동 저장</button>
+      <button class="fbtn" id="fOpen" type="button" hidden>기존 파일 열기</button>
+      <button class="fbtn" id="fDisconnect" type="button" hidden>연결 끊기</button>
+      <button class="fbtn" id="fExport" type="button">내보내기</button>
+      <button class="fbtn" id="fImport" type="button">불러오기</button>
+      <input type="file" id="fImportInput" accept=".json,application/json" hidden>
+    </div>
+  </div>
+
+  <!-- Study view -->
+  <section id="study" style="display:grid;gap:14px">
+    <form class="find" id="findForm" autocomplete="off">
+      <input id="findInput" type="text" placeholder="단어나 표현 입력 (예: water under the bridge)" aria-label="단어 검색" maxlength="80">
+      <button class="btn" type="submit">검색</button>
+    </form>
+
+    <section class="player" id="player" hidden aria-label="발음 영상">
+      <div class="player-head">
+        <span class="meta" id="pMeta"></span>
+        <div class="player-ctrl">
+          <button class="pbtn" id="pPrev" type="button">이전 영상</button>
+          <button class="pbtn" id="pReplay" type="button">다시 듣기</button>
+          <button class="pbtn" id="pNext" type="button">다음 영상</button>
+        </div>
+      </div>
+      <div id="yg"></div>
+    </section>
+
+    <div id="current"></div>
+  </section>
+
+  <!-- History view -->
+  <section id="history" hidden style="display:grid;gap:12px">
+    <div class="bar">
+      <div class="tabs" role="group" aria-label="필터">
+        <button class="tab" data-f="all" aria-pressed="true">전체 <span id="c-all"></span></button>
+        <button class="tab" data-f="todo" aria-pressed="false">연습 중 <span id="c-todo"></span></button>
+        <button class="tab" data-f="done" aria-pressed="false">완료 <span id="c-done"></span></button>
+      </div>
+      <input class="search" id="search" type="search" placeholder="히스토리에서 찾기" aria-label="히스토리에서 찾기">
+    </div>
+    <div id="histList"></div>
+  </section>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const SPEAK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
+const SLOW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>';
+const FROM_SHEET = ["Palliative", "under the influence", "water under the bridge", "incredible"];
+const KEY = "word-notebook", CUR_KEY = "word-notebook-current";
+
+let words = [];            // [{id, word, s:[3], created, viewed}]
+let currentId = null;
+let view = "study", filter = "all", query = "";
+const confirming = new Set();
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clean = (w) => w.trim().replace(/\s+/g, " ");
+const filled = (w) => (w.s || []).filter(x => x && x.trim()).length;
+const byId = (id) => words.find(x => x.id === id);
+const newId = () => "w" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const fmtDate = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; };
+
+// ---- storage (this browser only)
+function load() {
+  try { words = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { words = []; }
+  words.forEach(w => { if (!w.viewed) w.viewed = w.created || 0; });
+  try { currentId = localStorage.getItem(CUR_KEY); } catch {}
+  if (!byId(currentId)) currentId = null;
+}
+let saveT;
+function persist(now) {
+  clearTimeout(saveT);
+  const run = () => {
+    try { localStorage.setItem(KEY, JSON.stringify(words)); localStorage.setItem(CUR_KEY, currentId || ""); $("status").textContent = now ? "" : "저장됨"; }
+    catch { $("status").textContent = "저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요."; }
+    writeToFile();
+  };
+  if (now) run(); else { $("status").textContent = "저장 중…"; saveT = setTimeout(run, 500); }
+}
+let flashT;
+function flash(msg) { $("status").textContent = msg; clearTimeout(flashT); flashT = setTimeout(() => $("status").textContent = "", 2500); }
+
+// ---- actions
+function openWord(raw) {
+  const w = clean(raw);
+  if (!w) return;
+  let item = words.find(x => x.word.toLowerCase() === w.toLowerCase());
+  if (!item) {
+    item = { id: "w" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), word: w, s: ["", "", ""], created: Date.now() };
+    words.push(item);
+  }
+  item.viewed = Date.now();
+  currentId = item.id;
+  persist(true);
+  setView("study");
+  renderCurrent();
+  showVideo(item.word);
+  updateCounts();
+}
+function removeWord(id) {
+  const w = byId(id);
+  words = words.filter(x => x.id !== id);
+  if (currentId === id) { currentId = null; $("player").hidden = true; if (yg) yg.pause(); renderCurrent(); }
+  persist(true);
+  flash(`"${w.word}" 삭제됨`);
+  renderHistory(); updateCounts();
+}
+function speak(word, rate) {
+  try {
+    const u = new SpeechSynthesisUtterance(word); u.lang = "en-US"; u.rate = rate;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch { flash("이 브라우저에서는 소리 재생이 안 돼요."); }
+}
+
+// ---- views
+function setView(v) {
+  view = v;
+  $("study").hidden = v !== "study";
+  $("history").hidden = v !== "history";
+  $("vStudy").setAttribute("aria-pressed", v === "study");
+  $("vHist").setAttribute("aria-pressed", v === "history");
+  if (v === "history") { if (yg) yg.pause(); renderHistory(); }
+}
+function updateCounts() {
+  const all = words.length, done = words.filter(w => filled(w) === 3).length;
+  $("cHist").textContent = all || "";
+  $("c-all").textContent = all; $("c-done").textContent = done; $("c-todo").textContent = all - done;
+}
+function links(word) {
+  const w = encodeURIComponent(clean(word));
+  return [
+    { href: "https://www.merriam-webster.com/sentences/" + w, t: "Usage", d: "예문 모음" },
+    { href: "https://www.merriam-webster.com/dictionary/" + w, t: "Definition", d: "사전 뜻" },
+  ];
+}
+function recentList() {
+  return [...words].sort((a, b) => b.viewed - a.viewed).slice(0, 6);
+}
+function renderCurrent() {
+  const box = $("current");
+  const w = byId(currentId);
+  if (!w) {
+    const rec = recentList();
+    box.innerHTML = `<div class="empty">
+      <h2>공부할 단어를 검색하세요</h2>
+      <p>검색하면 발음 영상, 예문, 뜻이 나오고 그 단어로 문장 3개를 써 볼 수 있어요. 검색한 단어는 히스토리에 모여요.</p>
+      ${rec.length ? `<div class="recent">${rec.map(r => `<button type="button" data-open="${r.id}">${esc(r.word)}</button>`).join("")}</div>`
+        : `<button class="ghost" id="importSheet" type="button">엑셀 단어 4개 히스토리에 넣기</button>`}
+    </div>`;
+    const imp = $("importSheet");
+    if (imp) imp.onclick = () => {
+      FROM_SHEET.forEach((x, i) => words.push({ id: "w" + Date.now().toString(36) + i, word: x, s: ["", "", ""], created: Date.now() - i, viewed: Date.now() - i }));
+      persist(true); renderCurrent(); updateCounts(); flash("히스토리에 4개 추가됨");
+    };
+    return;
+  }
+  const n = filled(w);
+  box.innerHTML = `<article class="card">
+    <div class="head">
+      <h2 class="word">${esc(w.word)}</h2>
+      <button class="icon" id="say" aria-label="발음 듣기" title="발음 듣기">${SPEAK}</button>
+      <button class="icon" id="slow" aria-label="천천히 듣기" title="천천히 듣기">${SLOW}</button>
+      <span class="prog ${n === 3 ? "full" : ""}" id="prog">${n}/3 문장</span>
+    </div>
+    <div class="links">${links(w.word).map(l => `<a class="chip" href="${l.href}" target="_blank" rel="noopener"><b>${l.t}</b><span>${l.d}</span></a>`).join("")}</div>
+    <div class="sentences">
+      <div class="slabel">My sentences</div>
+      ${[0, 1, 2].map(i => `<div class="srow"><span class="n">${i + 1}</span><textarea id="s-${i}" data-i="${i}" rows="1" placeholder="${esc(w.word)}(으)로 문장 써 보기">${esc((w.s || [])[i] || "")}</textarea></div>`).join("")}
+    </div>
+  </article>`;
+  $("say").onclick = () => speak(w.word, 1);
+  $("slow").onclick = () => speak(w.word, 0.7);
+  box.querySelectorAll("textarea").forEach(t => { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; });
+}
+function renderHistory() {
+  let list = [...words].sort((a, b) => b.viewed - a.viewed);
+  list = list.filter(w => filter === "all" || (filter === "done" ? filled(w) === 3 : filled(w) < 3));
+  if (query) list = list.filter(w => w.word.toLowerCase().includes(query.toLowerCase()));
+  const box = $("histList");
+  if (!words.length) { box.innerHTML = `<div class="empty"><h2>아직 검색한 단어가 없어요</h2><p>공부하기 화면에서 단어를 검색하면 여기에 쌓여요.</p></div>`; return; }
+  if (!list.length) { box.innerHTML = `<div class="empty"><p>조건에 맞는 단어가 없어요.</p></div>`; return; }
+  box.innerHTML = `<div class="hist">${list.map(w => {
+    const n = filled(w);
+    const del = confirming.has(w.id)
+      ? `<span class="confirm">삭제할까요? <button class="yes" data-yes="${w.id}">삭제</button><button class="no" data-no="${w.id}">취소</button></span>`
+      : `<button class="del" data-del="${w.id}" aria-label="${esc(w.word)} 삭제">삭제</button>`;
+    return `<div class="row">
+      <button class="w" type="button" data-open="${w.id}">${esc(w.word)}</button>
+      <span class="p ${n === 3 ? "full" : ""}">${n}/3</span>
+      <span class="d" title="마지막으로 본 날">${fmtDate(w.viewed)}</span>
+      ${del}
+    </div>`;
+  }).join("")}</div>`;
+}
+
+// ---- events
+$("vStudy").onclick = () => setView("study");
+$("vHist").onclick = () => setView("history");
+$("findForm").addEventListener("submit", (e) => { e.preventDefault(); const v = $("findInput").value; $("findInput").value = ""; openWord(v); });
+$("search").addEventListener("input", (e) => { query = e.target.value.trim(); renderHistory(); });
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  filter = t.dataset.f;
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-pressed", x === t));
+  renderHistory();
+}));
+document.addEventListener("click", (e) => {
+  const o = e.target.closest("[data-open]");
+  if (o) { const w = byId(o.dataset.open); if (w) openWord(w.word); return; }
+  const d = e.target.closest("[data-del]"); if (d) { confirming.add(d.dataset.del); renderHistory(); return; }
+  const n = e.target.closest("[data-no]"); if (n) { confirming.delete(n.dataset.no); renderHistory(); return; }
+  const y = e.target.closest("[data-yes]"); if (y) { confirming.delete(y.dataset.yes); removeWord(y.dataset.yes); }
+});
+$("current").addEventListener("input", (e) => {
+  const t = e.target; if (t.tagName !== "TEXTAREA") return;
+  t.style.height = "auto"; t.style.height = t.scrollHeight + "px";
+  const w = byId(currentId); if (!w) return;
+  const s = [...(w.s || ["", "", ""])]; s[+t.dataset.i] = t.value; w.s = s; w.updated = Date.now();
+  const n = filled(w), p = $("prog");
+  p.textContent = `${n}/3 문장`; p.classList.toggle("full", n === 3);
+  updateCounts(); persist(false);
+});
+
+// ---- YouGlish video player (official widget)
+let yg = null, ygReady = false, pending = null;
+window.onYouglishAPIReady = () => {
+  ygReady = true;
+  if (pending) { const p = pending; pending = null; showVideo(p); }
+};
+function showVideo(word) {
+  $("player").hidden = false;
+  if (!ygReady) { pending = word; $("pMeta").textContent = "플레이어 불러오는 중…"; return; }
+  $("pMeta").textContent = "영상 찾는 중…";
+  if (!yg) {
+    yg = new YG.Widget("yg", {
+      width: Math.min($("yg").clientWidth || 640, 736),
+      components: 9,
+      events: {
+        onFetchDone: (e) => { $("pMeta").textContent = e.totalResult ? `영상 ${e.totalResult.toLocaleString()}개` : "찾은 영상이 없어요. 다른 표현으로 검색해 보세요."; },
+        onVideoChange: (e) => { $("pMeta").textContent = `${e.trackNumber}번째 영상`; },
+        onError: () => { $("pMeta").textContent = "영상을 불러오지 못했어요. 인터넷 연결을 확인해 주세요."; },
+      },
+    });
+  }
+  if (typeof yg.fetch === "function") yg.fetch(word, "english"); else yg.search(word, "english");
+}
+$("pNext").onclick = () => yg && yg.next();
+$("pPrev").onclick = () => yg && yg.previous();
+$("pReplay").onclick = () => yg && yg.replay();
+(function loadWidget() {
+  const s = document.createElement("script");
+  s.src = "https://youglish.com/public/emb/widget.js";
+  s.async = true;
+  s.onerror = () => { $("pMeta").textContent = "플레이어를 불러오지 못했어요. 인터넷 연결을 확인해 주세요."; };
+  document.head.appendChild(s);
+})();
+
+// ---- file on this computer: auto-save (Chrome/Edge) + export/import (all browsers)
+const FS_OK = "showSaveFilePicker" in window && "showOpenFilePicker" in window;
+const PICK = { types: [{ description: "단어장 파일", accept: { "application/json": [".json"] } }] };
+let fileHandle = null, fileState = "none";   // none | on | needs-permission | error
+let writeChain = Promise.resolve();
+
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("word-notebook", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function kvGet(k) {
+  try { const db = await idb(); return await new Promise(res => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); }
+  catch { return null; }
+}
+async function kvSet(k, v) {
+  try { const db = await idb(); await new Promise(res => { const tx = db.transaction("kv", "readwrite"); tx.objectStore("kv").put(v, k); tx.oncomplete = res; tx.onerror = res; }); } catch {}
+}
+
+function snapshot() { return JSON.stringify({ app: "word-notebook", version: 1, saved: new Date().toISOString(), words }, null, 2); }
+function parseFile(text) {
+  const data = JSON.parse(text);
+  const list = Array.isArray(data) ? data : data && Array.isArray(data.words) ? data.words : null;
+  if (!list) throw new Error("format");
+  return list.filter(x => x && typeof x.word === "string" && clean(x.word)).map(x => ({
+    id: typeof x.id === "string" ? x.id : newId(),
+    word: clean(x.word),
+    s: [0, 1, 2].map(i => (Array.isArray(x.s) && typeof x.s[i] === "string") ? x.s[i] : ""),
+    created: +x.created || Date.now(), viewed: +x.viewed || +x.created || Date.now(), updated: +x.updated || 0,
+  }));
+}
+// same word in both: keep the more recently changed copy
+function mergeIn(list) {
+  const stamp = (w) => Math.max(w.updated || 0, w.viewed || 0, w.created || 0);
+  let added = 0;
+  for (const inc of list) {
+    const mine = words.find(x => x.word.toLowerCase() === inc.word.toLowerCase());
+    if (!mine) { words.push(inc); added++; }
+    else if (stamp(inc) > stamp(mine)) Object.assign(mine, { s: inc.s, viewed: inc.viewed, updated: inc.updated, created: Math.min(mine.created, inc.created) });
+  }
+  return added;
+}
+function refreshAll() {
+  updateCounts();
+  const editing = document.activeElement && document.activeElement.tagName === "TEXTAREA";
+  if (!editing) renderCurrent();
+  if (view === "history") renderHistory();
+}
+
+function renderFileBar() {
+  const name = fileHandle ? fileHandle.name : "";
+  const dot = $("fDot");
+  dot.className = "dot" + (fileState === "on" ? " on" : fileState === "needs-permission" || fileState === "error" ? " warn" : "");
+  $("fState").textContent =
+    fileState === "on" ? `${name} 파일에 자동 저장 중` :
+    fileState === "needs-permission" ? `${name} 파일과 다시 연결해야 해요` :
+    fileState === "error" ? `${name} 파일에 저장하지 못했어요. 다시 연결해 주세요.` :
+    FS_OK ? "이 브라우저에만 저장 중 · 파일에 자동 저장하려면 파일을 연결하세요" :
+    "이 브라우저에만 저장 중 · 가끔 내보내기로 파일을 받아 두세요";
+  $("fReconnect").hidden = !(fileState === "needs-permission" || fileState === "error");
+  $("fNew").hidden = !FS_OK || fileState === "on";
+  $("fOpen").hidden = !FS_OK || fileState === "on";
+  $("fDisconnect").hidden = !fileHandle;
+}
+
+function writeToFile() {
+  if (!fileHandle || fileState !== "on") return;
+  const text = snapshot(), h = fileHandle;
+  writeChain = writeChain.then(async () => {
+    try { const w = await h.createWritable(); await w.write(text); await w.close(); }
+    catch { fileState = "error"; renderFileBar(); }
+  });
+}
+async function readHandle(h) {
+  const f = await h.getFile();
+  const text = await f.text();
+  return text.trim() ? parseFile(text) : [];
+}
+async function connect(h, { merge }) {
+  fileHandle = h;
+  if (merge) {
+    try { const added = mergeIn(await readHandle(h)); if (added) flash(`파일에서 단어 ${added}개를 가져왔어요`); }
+    catch { flash("파일 내용을 읽지 못했어요. 이 단어장에서 저장한 파일인지 확인해 주세요."); fileHandle = null; fileState = "none"; renderFileBar(); return; }
+  }
+  fileState = "on";
+  await kvSet("file", h);
+  persist(true);          // writes browser copy + file
+  refreshAll(); renderFileBar();
+}
+
+$("fNew").onclick = async () => {
+  try {
+    const h = await window.showSaveFilePicker({ ...PICK, suggestedName: "my-words.json" });
+    await connect(h, { merge: false });
+    flash(`${h.name}에 저장했어요. 이제 자동으로 저장돼요.`);
+  } catch (e) { if (e && e.name !== "AbortError") flash("파일을 만들지 못했어요."); }
+};
+$("fOpen").onclick = async () => {
+  try {
+    const [h] = await window.showOpenFilePicker(PICK);
+    if ((await h.requestPermission({ mode: "readwrite" })) !== "granted") { flash("파일에 저장하려면 허용이 필요해요."); return; }
+    await connect(h, { merge: true });
+  } catch (e) { if (e && e.name !== "AbortError") flash("파일을 열지 못했어요."); }
+};
+$("fReconnect").onclick = async () => {
+  if (!fileHandle) return;
+  try {
+    if ((await fileHandle.requestPermission({ mode: "readwrite" })) !== "granted") { flash("파일에 저장하려면 허용이 필요해요."); return; }
+    await connect(fileHandle, { merge: true });
+  } catch { fileState = "error"; renderFileBar(); }
+};
+$("fDisconnect").onclick = async () => {
+  fileHandle = null; fileState = "none";
+  await kvSet("file", null);
+  renderFileBar(); flash("파일 연결을 끊었어요. 단어장은 이 브라우저에 그대로 있어요.");
+};
+$("fExport").onclick = () => {
+  const blob = new Blob([snapshot()], { type: "application/json" });
+  const a = document.createElement("a");
+  const d = new Date();
+  a.href = URL.createObjectURL(blob);
+  a.download = `my-words-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  flash(`단어 ${words.length}개를 파일로 내보냈어요`);
+};
+$("fImport").onclick = () => $("fImportInput").click();
+$("fImportInput").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const added = mergeIn(parseFile(await f.text()));
+    persist(true); refreshAll();
+    flash(added ? `단어 ${added}개를 불러왔어요` : "새 단어는 없었어요. 같은 단어는 더 최근 내용으로 맞췄어요.");
+  } catch { flash("파일을 읽지 못했어요. 이 단어장에서 내보낸 파일인지 확인해 주세요."); }
+};
+
+async function restoreFile() {
+  if (!FS_OK) { renderFileBar(); return; }
+  const h = await kvGet("file");
+  if (!h) { renderFileBar(); return; }
+  fileHandle = h;
+  try {
+    const p = await h.queryPermission({ mode: "readwrite" });
+    if (p === "granted") { await connect(h, { merge: true }); return; }
+    fileState = "needs-permission";
+  } catch { fileState = "error"; }
+  renderFileBar();
+}
+
+// ---- start
+load();
+updateCounts();
+renderCurrent();
+if (byId(currentId)) showVideo(byId(currentId).word);
+restoreFile();
+</script>
