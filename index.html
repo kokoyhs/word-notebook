@@ -149,7 +149,8 @@ textarea:focus { outline: none; border-color: var(--accent); border-style: solid
     </div>
   </div>
 
-  <div class="filebar" aria-label="저장 위치">
+  <!-- File save controls: hidden for now; words auto-save in this browser and show in History -->
+  <div class="filebar" aria-label="저장 위치" hidden>
     <div class="state"><span class="dot" id="fDot"></span><span id="fState">이 브라우저에 저장 중</span></div>
     <div class="acts">
       <button class="fbtn primary" id="fReconnect" type="button" hidden>다시 연결</button>
@@ -392,7 +393,7 @@ function showVideo(word) {
   if (!yg) {
     yg = new YG.Widget("yg", {
       width: Math.min($("yg").clientWidth || 640, 736),
-      components: 9,
+      components: 24,  // caption (8) + speed controls (16); no search box, the page has its own
       events: {
         onFetchDone: (e) => { $("pMeta").textContent = e.totalResult ? `영상 ${e.totalResult.toLocaleString()}개` : "찾은 영상이 없어요. 다른 표현으로 검색해 보세요."; },
         onVideoChange: (e) => { $("pMeta").textContent = `${e.trackNumber}번째 영상`; },
