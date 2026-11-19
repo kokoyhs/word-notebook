@@ -148,6 +148,24 @@ mark { background: #ffe58a; color: #17212b; border-radius: 3px; padding: 0 2px; 
 .myrec span { font-size: 0.85rem; font-weight: 600; }
 .myrec audio { max-width: 100%; height: 36px; }
 
+.scol { display: grid; gap: 6px; min-width: 0; }
+.check:empty { display: none; }
+.check { display: grid; gap: 6px; font-size: 0.88rem; padding: 8px 10px; border-radius: 8px; background: var(--bg); }
+.check p { margin: 0; }
+.check .ok { color: var(--done); font-weight: 500; }
+.check .warn { color: #b26a00; }
+.check .marked { line-height: 1.6; }
+mark.err { background: transparent; color: var(--danger); text-decoration: underline wavy var(--danger); text-underline-offset: 3px; padding: 0; }
+.issues { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+.issues .bad { font-weight: 600; color: var(--danger); }
+.fixes { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-left: 6px; color: var(--muted); font-size: 0.8rem; }
+.fix { border: 1px solid var(--done); color: var(--done); background: transparent; border-radius: 6px; padding: 1px 8px; font-size: 0.85rem; }
+.fix:hover { background: var(--done); color: var(--surface); }
+.pill.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; }
+.pill.primary:hover { color: var(--surface); filter: brightness(1.1); }
+.pill:disabled { opacity: 0.6; cursor: default; }
+.small { font-size: 0.8rem; }
+
 .filebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
 .filebar .state { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; min-width: 0; flex: 1 1 220px; overflow-wrap: anywhere; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
@@ -482,10 +500,84 @@ function renderPanel() {
   // write
   p.innerHTML = `<div class="sentences">
       <p class="muted">이 단어로 내 문장을 3개 써 보세요. 쓰는 대로 저장돼요.</p>
-      ${[0, 1, 2].map(i => `<div class="srow"><span class="n">${i + 1}</span><textarea id="s-${i}" data-i="${i}" rows="1" placeholder="${esc(w.word)}(으)로 문장 써 보기">${esc((w.s || [])[i] || "")}</textarea></div>`).join("")}
+      ${[0, 1, 2].map(i => `<div class="srow"><span class="n">${i + 1}</span><div class="scol"><textarea id="s-${i}" data-i="${i}" rows="1" placeholder="${esc(w.word)}(으)로 문장 써 보기">${esc((w.s || [])[i] || "")}</textarea><div class="check" id="r-${i}"></div></div></div>`).join("")}
+      <div class="btnrow">
+        <button class="pill primary" type="button" id="checkBtn">문장 검사하기</button>
+        <span class="muted small">문법·철자를 검사해요. 검사할 때 문장이 LanguageTool(무료 검사 서비스)로 보내져요.</span>
+      </div>
     </div>`;
+  $("checkBtn").onclick = () => checkAll(w.id);
   p.querySelectorAll("textarea").forEach(t => { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; });
 }
+
+// ---- sentence check (LanguageTool public API)
+async function checkOne(text) {
+  const body = new URLSearchParams({ text, language: "en-US" });
+  const r = await fetch("https://api.languagetool.org/v2/check", { method: "POST", body });
+  if (r.status === 429) throw new Error("rate");
+  if (!r.ok) throw new Error("http");
+  return (await r.json()).matches || [];
+}
+function usesWord(text, word) {
+  const t = text.toLowerCase(), w = word.toLowerCase();
+  if (t.includes(w)) return true;
+  // allow other forms: incredibly, diplomats, broke the ice ...
+  return w.split(" ").filter(x => x.length > 3).every(x => t.includes(x.slice(0, Math.max(4, x.length - 2))));
+}
+function renderCheck(i, text, matches, word) {
+  const box = $("r-" + i); if (!box) return;
+  const parts = [];
+  if (!usesWord(text, word)) parts.push(`<p class="warn">이 문장에 "${esc(word)}"이(가) 안 보여요.</p>`);
+  if (!matches.length) {
+    parts.push(`<p class="ok">문법·철자 문제를 찾지 못했어요.</p>`);
+  } else {
+    // sentence with problem parts marked
+    let html = "", pos = 0;
+    [...matches].sort((a, b) => a.offset - b.offset).forEach(m => {
+      if (m.offset < pos) return;
+      html += esc(text.slice(pos, m.offset)) + `<mark class="err">${esc(text.slice(m.offset, m.offset + m.length))}</mark>`;
+      pos = m.offset + m.length;
+    });
+    html += esc(text.slice(pos));
+    parts.push(`<p class="marked">${html}</p>`);
+    parts.push(`<ul class="issues">${matches.map(m => {
+      const bad = text.slice(m.offset, m.offset + m.length);
+      const fixes = (m.replacements || []).slice(0, 3).map(r => `<button type="button" class="fix" data-fix="${i}" data-off="${m.offset}" data-len="${m.length}" data-val="${esc(r.value)}">${esc(r.value)}</button>`).join("");
+      return `<li><span class="bad">${esc(bad)}</span> ${esc(m.message)}${fixes ? `<span class="fixes">바꾸기: ${fixes}</span>` : ""}</li>`;
+    }).join("")}</ul>`);
+  }
+  box.innerHTML = parts.join("");
+}
+async function checkAll(id, only) {
+  const w = byId(id); if (!w) return;
+  const btn = $("checkBtn");
+  const idx = only !== undefined ? [only] : [0, 1, 2].filter(i => (w.s[i] || "").trim());
+  if (!idx.length) { flash("먼저 문장을 써 주세요."); return; }
+  if (btn) { btn.disabled = true; btn.textContent = "검사 중…"; }
+  for (const i of idx) {
+    const text = (w.s[i] || "").trim();
+    const box = $("r-" + i);
+    if (!text) { if (box) box.innerHTML = ""; continue; }
+    if (box) box.innerHTML = `<p class="muted small">검사 중…</p>`;
+    try { renderCheck(i, text, await checkOne(text), w.word); }
+    catch (e) {
+      if (box) box.innerHTML = `<p class="warn">${e.message === "rate" ? "검사를 너무 자주 했어요. 1분쯤 뒤에 다시 눌러 주세요." : "검사하지 못했어요. 인터넷 연결을 확인해 주세요."}</p>`;
+    }
+    if (currentId !== id || tab !== "write") break;
+  }
+  if ($("checkBtn")) { $("checkBtn").disabled = false; $("checkBtn").textContent = "문장 검사하기"; }
+}
+document.addEventListener("click", (e) => {
+  const f = e.target.closest("[data-fix]"); if (!f) return;
+  const w = byId(currentId); if (!w) return;
+  const i = +f.dataset.fix, off = +f.dataset.off, len = +f.dataset.len;
+  const text = (w.s[i] || "").trim();
+  const fixed = text.slice(0, off) + f.dataset.val + text.slice(off + len);
+  const s = [...w.s]; s[i] = fixed; w.s = s; w.updated = Date.now();
+  const ta = $("s-" + i); if (ta) ta.value = fixed;
+  persist(true);
+  checkAll(w.id, i);
+});
 
 // ---- recording (kept per word in this browser)
 let recorder = null, recChunks = [], recTimer = null, recStart = 0, recUrl = null;
@@ -569,6 +661,7 @@ document.addEventListener("click", (e) => {
 $("current").addEventListener("input", (e) => {
   const t = e.target; if (t.tagName !== "TEXTAREA") return;
   t.style.height = "auto"; t.style.height = t.scrollHeight + "px";
+  const r = $("r-" + t.dataset.i); if (r) r.innerHTML = "";
   const w = byId(currentId); if (!w) return;
   const s = [...(w.s || ["", "", ""])]; s[+t.dataset.i] = t.value; w.s = s; w.updated = Date.now();
   const n = filled(w), p = $("prog");
