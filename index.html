@@ -89,29 +89,55 @@ textarea:focus { outline: none; border-color: var(--accent); border-style: solid
 .pbtn { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 8px; padding: 5px 10px; font-size: 0.85rem; }
 .pbtn:hover { border-color: var(--accent); color: var(--accent); }
 #yg { width: 100%; min-height: 200px; }
+
+/* study stage: word header, video, word card */
+.stage { display: grid; gap: 14px; min-width: 0; grid-template-areas: "head" "player" "card"; }
+.whead { grid-area: head; padding: 0 2px; }
+.stage > .player { grid-area: player; }
+#current { grid-area: card; min-width: 0; }
+@media (min-width: 900px) {
+  .wrap { max-width: 1120px; }
+  .stage:has(> .player:not([hidden])) {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "player head" "player card";
+    column-gap: 22px; align-items: start;
+  }
+  .stage > .player { position: sticky; top: 16px; align-self: start; }
+}
 #yg iframe { max-width: 100%; }
 
 .empty { background: var(--surface); border: 1.5px dashed var(--line); border-radius: 14px; padding: 28px 20px; text-align: center; display: grid; gap: 12px; justify-items: center; }
 .empty h2 { font-family: var(--display); font-size: 1.15rem; margin: 0; }
 .empty p { margin: 0; color: var(--muted); max-width: 46ch; }
+.histfoot { display: flex; justify-content: center; align-items: center; gap: 6px; padding-top: 6px; font-size: 0.82rem; color: var(--muted); }
+.linkbtn { border: 0; background: none; padding: 2px 4px; color: var(--muted); font-size: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.linkbtn:hover { color: var(--accent); }
 .ghost { border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 999px; padding: 6px 14px; font-weight: 500; }
 .recent { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .recent button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 12px; font-size: 0.88rem; }
 .recent button:hover { border-color: var(--accent); color: var(--accent); }
 
 .bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
-.tabs { display: flex; gap: 4px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.histtools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.histtools .pill { padding: 6px 12px; font-size: 0.85rem; }
 .tab { border: 1px solid var(--line); background: var(--surface); color: var(--muted); padding: 4px 12px; border-radius: 999px; font-size: 0.85rem; }
 .tab[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 .search { font: inherit; font-size: 0.9rem; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); width: 200px; max-width: 100%; }
 
 .hist { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
 .row:first-child { border-top: 0; }
 .row .w { border: 0; background: transparent; color: var(--ink); text-align: left; font-weight: 600; font-size: 1rem; padding: 2px 0; overflow-wrap: anywhere; min-width: 0; }
 .row .w:hover { color: var(--accent); text-decoration: underline; }
 .row .p { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .row .p.full { color: var(--done); font-weight: 600; }
+.st { display: inline-block; font-size: 0.74rem; font-weight: 600; line-height: 1; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.st.practicing { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.st.learned { border-color: var(--done); color: var(--surface); background: var(--done); }
+#stHead { margin-left: auto; display: inline-flex; }
+#stHead + .prog { margin-left: 0; }
 .row .d { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .del { border: 0; background: transparent; color: var(--muted); font-size: 0.8rem; padding: 4px 6px; border-radius: 6px; }
 .del:hover { color: var(--danger); }
@@ -128,6 +154,11 @@ textarea:focus { outline: none; border-color: var(--accent); border-style: solid
 .panel { display: grid; gap: 12px; min-width: 0; }
 .panel h3 { margin: 0; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .muted { color: var(--muted); margin: 0; font-size: 0.9rem; }
+.memo { display: flex; align-items: center; gap: 8px; }
+.memo span { font-size: 0.8rem; font-weight: 600; color: var(--muted); flex: none; }
+.memo input { flex: 1; min-width: 0; font: inherit; padding: 7px 10px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--ink); }
+.memo input:not(:placeholder-shown) { border-style: solid; }
+.memo input:focus { outline: none; border-color: var(--accent); border-style: solid; }
 .pos { display: grid; gap: 4px; }
 .pos ol { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
 .syn { margin: 0; font-size: 0.88rem; }
@@ -147,6 +178,9 @@ mark { background: #ffe58a; color: #17212b; border-radius: 3px; padding: 0 2px; 
 .myrec { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .myrec span { font-size: 0.85rem; font-weight: 600; }
 .myrec audio { max-width: 100%; height: 36px; }
+.listen { margin-top: 8px; display: grid; gap: 6px; }
+.listen .pill { padding: 5px 12px; font-size: 0.85rem; }
+.listen .muted { font-size: 0.82rem; margin: 0; }
 
 .scol { display: grid; gap: 6px; min-width: 0; }
 .check:empty { display: none; }
@@ -180,7 +214,7 @@ mark.err { background: transparent; color: var(--danger); text-decoration: under
 @media (max-width: 480px) {
   h1 { font-size: 1.4rem; }
   .search { width: 100%; }
-  .row { grid-template-columns: 1fr auto auto; }
+  .row { grid-template-columns: 1fr auto auto auto; gap: 8px; }
   .row .d { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
@@ -216,6 +250,8 @@ mark.err { background: transparent; color: var(--danger); text-decoration: under
       <button class="btn" type="submit">검색</button>
     </form>
 
+    <div class="stage" id="stage">
+    <div class="whead" id="whead" hidden></div>
     <section class="player" id="player" hidden aria-label="발음 영상">
       <div class="player-head">
         <span class="meta" id="pMeta"></span>
@@ -229,6 +265,7 @@ mark.err { background: transparent; color: var(--danger); text-decoration: under
     </section>
 
     <div id="current"></div>
+    </div>
   </section>
 
   <!-- History view -->
@@ -236,12 +273,21 @@ mark.err { background: transparent; color: var(--danger); text-decoration: under
     <div class="bar">
       <div class="tabs" role="group" aria-label="필터">
         <button class="tab" data-f="all" aria-pressed="true">전체 <span id="c-all"></span></button>
-        <button class="tab" data-f="todo" aria-pressed="false">연습 중 <span id="c-todo"></span></button>
-        <button class="tab" data-f="done" aria-pressed="false">완료 <span id="c-done"></span></button>
+        <button class="tab" data-f="new" aria-pressed="false">새 단어 <span id="c-new"></span></button>
+        <button class="tab" data-f="practicing" aria-pressed="false">연습 중 <span id="c-practicing"></span></button>
+        <button class="tab" data-f="learned" aria-pressed="false">익힘 <span id="c-learned"></span></button>
       </div>
-      <input class="search" id="search" type="search" placeholder="히스토리에서 찾기" aria-label="히스토리에서 찾기">
+      <div class="histtools">
+        <button class="pill" id="copyTutor" type="button" title="최근 7일 동안 쓴 문장을 '단어: 문장' 줄로 복사해요">튜터에게 보낼 문장 복사</button>
+        <input class="search" id="search" type="search" placeholder="히스토리에서 찾기" aria-label="히스토리에서 찾기">
+      </div>
     </div>
     <div id="histList"></div>
+    <div class="histfoot">
+      <button class="linkbtn" id="hExport" type="button">단어장 내보내기</button>
+      <span aria-hidden="true">/</span>
+      <button class="linkbtn" id="hImport" type="button">불러오기</button>
+    </div>
   </section>
 
   <div class="status" id="status"></div>
@@ -250,7 +296,6 @@ mark.err { background: transparent; color: var(--danger); text-decoration: under
 <script>
 const SPEAK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
 const SLOW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>';
-const FROM_SHEET = ["Palliative", "under the influence", "water under the bridge", "incredible"];
 const KEY = "word-notebook", CUR_KEY = "word-notebook-current";
 
 let words = [];            // [{id, word, s:[3], created, viewed}]
@@ -284,6 +329,24 @@ function persist(now) {
   if (now) run(); else { $("status").textContent = "저장 중…"; saveT = setTimeout(run, 500); }
 }
 let flashT;
+// sAt[i]: when sentence i was last written (older words without it fall back to the word's last change)
+function stampSentence(w, i) { const a = Array.isArray(w.sAt) ? [...w.sAt] : [0, 0, 0]; a[i] = Date.now(); w.sAt = a; }
+function tutorText(days = 7) {
+  const since = Date.now() - days * 864e5, items = [];
+  for (const w of words) (w.s || []).forEach((t, i) => {
+    const at = (Array.isArray(w.sAt) && w.sAt[i]) || w.updated || 0;
+    if (t && t.trim() && at >= since) items.push({ at, line: `${w.word}: ${t.trim().replace(/\s+/g, " ")}` });
+  });
+  return items.sort((a, b) => a.at - b.at).map(x => x.line);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch {}
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  let ok = false; try { ok = document.execCommand("copy"); } catch {}
+  ta.remove(); return ok;
+}
 function flash(msg) { $("status").textContent = msg; clearTimeout(flashT); flashT = setTimeout(() => $("status").textContent = "", 2500); }
 
 // ---- actions
@@ -327,10 +390,17 @@ function setView(v) {
   $("vHist").setAttribute("aria-pressed", v === "history");
   if (v === "history") { if (yg) yg.pause(); renderHistory(); }
 }
+// new → practicing (1+ sentence) → learned ("알았음" twice in a row in review; knownStreak is kept by the review screen)
+const STATUS = { new: "새 단어", practicing: "연습 중", learned: "익힘" };
+function status(w) {
+  if ((w.knownStreak || 0) >= 2) return "learned";
+  return filled(w) > 0 ? "practicing" : "new";
+}
+const stPill = (w) => { const k = status(w); return `<span class="st ${k}">${STATUS[k]}</span>`; };
 function updateCounts() {
-  const all = words.length, done = words.filter(w => filled(w) === 3).length;
-  $("cHist").textContent = all || "";
-  $("c-all").textContent = all; $("c-done").textContent = done; $("c-todo").textContent = all - done;
+  $("cHist").textContent = words.length || "";
+  $("c-all").textContent = words.length;
+  for (const k of Object.keys(STATUS)) $("c-" + k).textContent = words.filter(w => status(w) === k).length;
 }
 function links(word) {
   const w = encodeURIComponent(clean(word));
@@ -345,29 +415,46 @@ function recentList() {
 function renderCurrent() {
   const box = $("current");
   const w = byId(currentId);
+  const head = $("whead");
   if (!w) {
+    head.hidden = true; head.innerHTML = "";
     const rec = recentList();
     box.innerHTML = `<div class="empty">
       <h2>공부할 단어를 검색하세요</h2>
       <p>검색하면 발음 영상, 예문, 뜻이 나오고 그 단어로 문장 3개를 써 볼 수 있어요. 검색한 단어는 히스토리에 모여요.</p>
       ${rec.length ? `<div class="recent">${rec.map(r => `<button type="button" data-open="${r.id}">${esc(r.word)}</button>`).join("")}</div>`
-        : `<button class="ghost" id="importSheet" type="button">엑셀 단어 4개 히스토리에 넣기</button>`}
+        : `<button class="ghost" id="importFile" type="button">단어장 파일 불러오기</button>`}
     </div>`;
-    const imp = $("importSheet");
-    if (imp) imp.onclick = () => {
-      FROM_SHEET.forEach((x, i) => words.push({ id: "w" + Date.now().toString(36) + i, word: x, s: ["", "", ""], created: Date.now() - i, viewed: Date.now() - i }));
-      persist(true); renderCurrent(); updateCounts(); flash("히스토리에 4개 추가됨");
-    };
+    const imp = $("importFile");
+    if (imp) imp.onclick = () => $("fImportInput").click();
     return;
   }
   const n = filled(w);
   stopRecording();
-  box.innerHTML = `<article class="card">
-    <div class="head">
+  head.hidden = false;
+  head.innerHTML = `<div class="head">
       <h2 class="word">${esc(w.word)}</h2>
       <span class="phon" id="phon"></span>
+      <span id="stHead">${stPill(w)}</span>
       <span class="prog ${n === 3 ? "full" : ""}" id="prog">${n}/3 문장</span>
     </div>
+    <div class="listen">
+      <div class="btnrow">
+        <button class="pill" type="button" id="say">${SPEAK} 듣기</button>
+        <button class="pill" type="button" id="slow">${SLOW} 천천히</button>
+        <button class="pill" type="button" id="real" hidden>${SPEAK} 사전 녹음</button>
+        <button class="pill rec" type="button" id="recBtn"><span class="recdot"></span><span id="recLabel">녹음</span></button>
+        <span class="muted" id="recTime"></span>
+      </div>
+      <div id="myRec"></div>
+    </div>`;
+  $("say").onclick = () => speak(w.word, 1);
+  $("slow").onclick = () => speak(w.word, 0.7);
+  $("real").onclick = () => { const a = dictAudio(); if (a) try { new Audio(a).play(); } catch {} };
+  $("recBtn").onclick = () => recorder ? stopRecording() : startRecording(w.id);
+  showMyRecording(w.id);
+  if (shownId !== w.id) { shownId = w.id; tab = n > 0 ? "write" : "def"; }
+  box.innerHTML = `<article class="card">
     <div class="ctabs" role="tablist" aria-label="공부 방법">
       ${TABS.map(t => `<button type="button" role="tab" id="t-${t.k}" data-tab="${t.k}" aria-selected="${t.k === tab}">${t.label}</button>`).join("")}
     </div>
@@ -380,19 +467,16 @@ function renderCurrent() {
 // ---- word card tabs
 const TABS = [
   { k: "def", label: "사전 뜻" },
-  { k: "listen", label: "듣기 · 녹음" },
   { k: "ex", label: "예문" },
   { k: "write", label: "문장 써보기" },
 ];
-let tab = (() => { try { return localStorage.getItem("word-notebook-tab") || "def"; } catch { return "def"; } })();
-if (!TABS.some(t => t.k === tab)) tab = "def";
+// A word opens on 사전 뜻 while it has no sentences, and on 문장 써보기 once it has one.
+let tab = "def", shownId = null;
 const dict = {};   // word(lowercase) -> "loading" | null (not found) | "error" | entries[]
 
 function setTab(k) {
   tab = k;
-  try { localStorage.setItem("word-notebook-tab", k); } catch {}
   document.querySelectorAll(".ctabs [data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === k));
-  if (k !== "listen") stopRecording();
   renderPanel();
 }
 async function loadDict(word) {
@@ -404,13 +488,14 @@ async function loadDict(word) {
     dict[key] = r.status === 404 ? null : r.ok ? await r.json() : "error";
   } catch { dict[key] = "error"; }
   const w = byId(currentId);
-  if (w && w.word.toLowerCase() === key) { showPhonetic(); if (tab === "def" || tab === "ex" || tab === "listen") renderPanel(); }
+  if (w && w.word.toLowerCase() === key) { showPhonetic(); if (tab === "def" || tab === "ex") renderPanel(); }
 }
 function entries() { const w = byId(currentId); const d = w && dict[w.word.toLowerCase()]; return Array.isArray(d) ? d : null; }
 function showPhonetic() {
   const e = entries(), el = $("phon"); if (!el) return;
   const p = e && (e.map(x => x.phonetic).find(Boolean) || e.flatMap(x => x.phonetics || []).map(x => x.text).find(Boolean));
   el.textContent = p || "";
+  if ($("real")) $("real").hidden = !dictAudio();
 }
 function dictAudio() {
   const e = entries(); if (!e) return "";
@@ -452,35 +537,9 @@ function renderPanel() {
         ${g.syn.size ? `<p class="syn"><span>Synonyms</span> ${[...g.syn].slice(0, 6).map(esc).join(", ")}</p>` : ""}
       </section>`).join("");
     }
-    p.innerHTML = html + ext(defn, "Merriam-Webster에서 뜻 더 보기");
-    return;
-  }
-
-  if (tab === "listen") {
-    const audio = dictAudio();
-    p.innerHTML = `
-      <div class="step">
-        <h3>1. 원어민 발음 듣기</h3>
-        <div class="btnrow">
-          <button class="pill" type="button" id="say">${SPEAK} 보통 속도</button>
-          <button class="pill" type="button" id="slow">${SLOW} 천천히</button>
-          ${audio ? `<button class="pill" type="button" id="real">${SPEAK} 사전 녹음 듣기</button>` : ""}
-        </div>
-        <p class="muted">위 영상에서 실제 문장 속 발음도 들어 보세요.</p>
-      </div>
-      <div class="step">
-        <h3>2. 따라 말하고 녹음하기</h3>
-        <div class="btnrow">
-          <button class="pill rec" type="button" id="recBtn"><span class="recdot"></span><span id="recLabel">녹음 시작</span></button>
-          <span class="muted" id="recTime"></span>
-        </div>
-        <div id="myRec"></div>
-      </div>`;
-    $("say").onclick = () => speak(w.word, 1);
-    $("slow").onclick = () => speak(w.word, 0.7);
-    if (audio) $("real").onclick = () => { try { new Audio(audio).play(); } catch {} };
-    $("recBtn").onclick = () => recorder ? stopRecording() : startRecording(w.id);
-    showMyRecording(w.id);
+    // keep the memo box as is, so a dictionary reply never interrupts typing
+    if (!$("memo")) p.innerHTML = `<label class="memo"><span>내 메모</span><input id="memo" type="text" maxlength="200" autocomplete="off" placeholder="한국어 뜻이나 기억할 점 (예: 외교관)" value="${esc(w.memo || "")}"></label><div class="panel" id="defBody"></div>`;
+    $("defBody").innerHTML = html + ext(defn, "Merriam-Webster에서 뜻 더 보기");
     return;
   }
 
@@ -529,7 +588,7 @@ function renderCheck(i, text, matches, word) {
   const parts = [];
   if (!usesWord(text, word)) parts.push(`<p class="warn">이 문장에 "${esc(word)}"이(가) 안 보여요.</p>`);
   if (!matches.length) {
-    parts.push(`<p class="ok">문법·철자 문제를 찾지 못했어요.</p>`);
+    parts.push(`<p class="ok">철자·기본 문법 문제는 못 찾았어요. 시제나 자연스러움은 확인하지 못해요.</p>`);
   } else {
     // sentence with problem parts marked
     let html = "", pos = 0;
@@ -573,7 +632,7 @@ document.addEventListener("click", (e) => {
   const i = +f.dataset.fix, off = +f.dataset.off, len = +f.dataset.len;
   const text = (w.s[i] || "").trim();
   const fixed = text.slice(0, off) + f.dataset.val + text.slice(off + len);
-  const s = [...w.s]; s[i] = fixed; w.s = s; w.updated = Date.now();
+  const s = [...w.s]; s[i] = fixed; w.s = s; w.updated = Date.now(); stampSentence(w, i);
   const ta = $("s-" + i); if (ta) ta.value = fixed;
   persist(true);
   checkAll(w.id, i);
@@ -611,16 +670,16 @@ async function showMyRecording(id, autoplay) {
   const blob = await kvGet("rec:" + id);
   const box = $("myRec"); if (!box || currentId !== id) return;
   if (recUrl) URL.revokeObjectURL(recUrl);
-  if (!blob) { box.innerHTML = `<p class="muted">녹음 버튼을 누르고 단어를 말한 뒤 멈추기를 누르세요. 내 발음을 원어민 발음과 비교해 볼 수 있어요.</p>`; return; }
+  if (!blob) { box.innerHTML = ""; return; }
   recUrl = URL.createObjectURL(blob);
   box.innerHTML = `<div class="myrec"><span>내 녹음</span><audio controls src="${recUrl}"></audio><button class="del" type="button" id="recDel">지우기</button></div>`;
   if ($("recLabel")) $("recLabel").textContent = "다시 녹음";
-  $("recDel").onclick = async () => { await kvSet("rec:" + id, null); showMyRecording(id); if ($("recLabel")) $("recLabel").textContent = "녹음 시작"; };
+  $("recDel").onclick = async () => { await kvSet("rec:" + id, null); showMyRecording(id); if ($("recLabel")) $("recLabel").textContent = "녹음"; };
   if (autoplay) { try { box.querySelector("audio").play(); } catch {} }
 }
 function renderHistory() {
   let list = [...words].sort((a, b) => b.viewed - a.viewed);
-  list = list.filter(w => filter === "all" || (filter === "done" ? filled(w) === 3 : filled(w) < 3));
+  list = list.filter(w => filter === "all" || status(w) === filter);
   if (query) list = list.filter(w => w.word.toLowerCase().includes(query.toLowerCase()));
   const box = $("histList");
   if (!words.length) { box.innerHTML = `<div class="empty"><h2>아직 검색한 단어가 없어요</h2><p>공부하기 화면에서 단어를 검색하면 여기에 쌓여요.</p></div>`; return; }
@@ -632,6 +691,7 @@ function renderHistory() {
       : `<button class="del" data-del="${w.id}" aria-label="${esc(w.word)} 삭제">삭제</button>`;
     return `<div class="row">
       <button class="w" type="button" data-open="${w.id}">${esc(w.word)}</button>
+      ${stPill(w)}
       <span class="p ${n === 3 ? "full" : ""}">${n}/3</span>
       <span class="d" title="마지막으로 본 날">${fmtDate(w.viewed)}</span>
       ${del}
@@ -659,13 +719,19 @@ document.addEventListener("click", (e) => {
   const y = e.target.closest("[data-yes]"); if (y) { confirming.delete(y.dataset.yes); removeWord(y.dataset.yes); }
 });
 $("current").addEventListener("input", (e) => {
-  const t = e.target; if (t.tagName !== "TEXTAREA") return;
+  const t = e.target;
+  if (t.id === "memo") {
+    const w = byId(currentId); if (!w) return;
+    w.memo = t.value; w.updated = Date.now(); persist(false); return;
+  }
+  if (t.tagName !== "TEXTAREA") return;
   t.style.height = "auto"; t.style.height = t.scrollHeight + "px";
   const r = $("r-" + t.dataset.i); if (r) r.innerHTML = "";
   const w = byId(currentId); if (!w) return;
-  const s = [...(w.s || ["", "", ""])]; s[+t.dataset.i] = t.value; w.s = s; w.updated = Date.now();
+  const s = [...(w.s || ["", "", ""])]; s[+t.dataset.i] = t.value; w.s = s; w.updated = Date.now(); stampSentence(w, +t.dataset.i);
   const n = filled(w), p = $("prog");
   p.textContent = `${n}/3 문장`; p.classList.toggle("full", n === 3);
+  $("stHead").innerHTML = stPill(w);
   updateCounts(); persist(false);
 });
 
@@ -681,7 +747,7 @@ function showVideo(word) {
   $("pMeta").textContent = "영상 찾는 중…";
   if (!yg) {
     yg = new YG.Widget("yg", {
-      width: Math.min($("yg").clientWidth || 640, 736),
+      width: $("yg").clientWidth || 640,
       components: 24,  // caption (8) + speed controls (16); no search box, the page has its own
       events: {
         onFetchDone: (e) => { $("pMeta").textContent = e.totalResult ? `영상 ${e.totalResult.toLocaleString()}개` : "찾은 영상이 없어요. 다른 표현으로 검색해 보세요."; },
@@ -733,6 +799,9 @@ function parseFile(text) {
     id: typeof x.id === "string" ? x.id : newId(),
     word: clean(x.word),
     s: [0, 1, 2].map(i => (Array.isArray(x.s) && typeof x.s[i] === "string") ? x.s[i] : ""),
+    memo: typeof x.memo === "string" ? x.memo.slice(0, 200) : "",
+    knownStreak: Math.max(0, Math.floor(+x.knownStreak || 0)),
+    sAt: [0, 1, 2].map(i => (Array.isArray(x.sAt) && +x.sAt[i]) || 0),
     created: +x.created || Date.now(), viewed: +x.viewed || +x.created || Date.now(), updated: +x.updated || 0,
   }));
 }
@@ -743,13 +812,13 @@ function mergeIn(list) {
   for (const inc of list) {
     const mine = words.find(x => x.word.toLowerCase() === inc.word.toLowerCase());
     if (!mine) { words.push(inc); added++; }
-    else if (stamp(inc) > stamp(mine)) Object.assign(mine, { s: inc.s, viewed: inc.viewed, updated: inc.updated, created: Math.min(mine.created, inc.created) });
+    else if (stamp(inc) > stamp(mine)) Object.assign(mine, { s: inc.s, memo: inc.memo, knownStreak: inc.knownStreak, sAt: inc.sAt, viewed: inc.viewed, updated: inc.updated, created: Math.min(mine.created, inc.created) });
   }
   return added;
 }
 function refreshAll() {
   updateCounts();
-  const editing = document.activeElement && document.activeElement.tagName === "TEXTAREA";
+  const editing = document.activeElement && (document.activeElement.tagName === "TEXTAREA" || document.activeElement.id === "memo");
   if (!editing) renderCurrent();
   if (view === "history") renderHistory();
 }
@@ -831,7 +900,13 @@ $("fExport").onclick = () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   flash(`단어 ${words.length}개를 파일로 내보냈어요`);
 };
-$("fImport").onclick = () => $("fImportInput").click();
+$("fImport").onclick = $("hImport").onclick = () => $("fImportInput").click();
+$("copyTutor").onclick = async () => {
+  const lines = tutorText(7);
+  if (!lines.length) { flash("최근 7일 동안 쓴 문장이 없어요."); return; }
+  flash(await copyText(lines.join("\n")) ? `문장 ${lines.length}개를 복사했어요. 튜터에게 보내는 글에 붙여 넣으세요.` : "복사하지 못했어요. 브라우저에서 클립보드 사용을 허용해 주세요.");
+};
+$("hExport").onclick = () => $("fExport").onclick();
 $("fImportInput").onchange = async (e) => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;
